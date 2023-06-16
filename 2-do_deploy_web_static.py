@@ -1,51 +1,43 @@
 #!/usr/bin/python3
-# This script uses the python function to automate deployment
-
-from fabric.api import *
-import os
 from datetime import datetime
+from fabric.api import *
+from os import path
 
-env.hosts = ['35.231.59.48', '35.237.144.156']
 
-
-def do_deploy(archive_path):
-    """ The below line of code contains the deployment script"""
-    a_list = archive_path.split(".tgz")
-    archive_wo_ext = "".join(a_list)
-    b_list = archive_wo_ext.split("versions/")
-    archive_wo_ext_ver = "".join(b_list)
-    c_list = archive_path.split("versions/")
-    archive_wo_ver = "".join(c_list)
-    if archive_path:
-        put(archive_path, '/tmp/')
-        run("mkdir -p /data/web_static/releases/{}/".
-            format(archive_wo_ext_ver))
-        run("tar -zxf /tmp/{} -C /data/web_static/releases/{}/"
-            .format(archive_wo_ver, archive_wo_ext_ver))
-        run("rm -r /tmp/{}".format(archive_wo_ver))
-        run("mv /data/web_static/releases/{}/web_static/*\
-        /data/web_static/releases/{}/".format(archive_wo_ext_ver,
-                                              archive_wo_ext_ver))
-        run("rm -rf /data/web_static/releases/{}/web_static".
-            format(archive_wo_ext_ver))
-        run("rm -rf /data/web_static/current")
-        run("ln -s /data/web_static/releases/{}/ /data/web_static/current".
-            format(archive_wo_ext_ver))
-        print("New version deployed!")
-        return True
-    else:
-        return False
+env.hosts = ['35.229.93.37', '54.196.213.127']
 
 
 def do_pack():
-    """ The do_pack function to run the script """
-    try:
-        filepath = "versions/web_static_" + datetime.now().\
-                   strftime("%Y%m%d%H%M%S") + ".tgz"
-        local("mkdir -p versions")
-        local("tar -zcvf versions/web_static_$(date +%Y%m%d%H%M%S).tgz\
-        web_static")
-        print("web_static packed: {} -> {}".
-              format(filepath, os.path.getsize(filepath)))
-    except:
-        return None
+    """Generates a .tgz archive from the contents
+    of the web_static folder of this repository.
+    """
+
+    d = datetime.now()
+    now = d.strftime('%Y%m%d%H%M%S')
+
+    local("mkdir -p versions")
+    local("tar -czvf versions/web_static_{}.tgz web_static".format(now))
+
+
+def do_deploy(archive_path):
+    """Distributes an .tgz archive through web servers
+    """
+
+    if path.exists(archive_path):
+        archive = archive_path.split('/')[1]
+        a_path = "/tmp/{}".format(archive)
+        folder = archive.split('.')[0]
+        f_path = "/data/web_static/releases/{}/".format(folder)
+
+        put(archive_path, a_path)
+        run("mkdir -p {}".format(f_path))
+        run("tar -xzf {} -C {}".format(a_path, f_path))
+        run("rm {}".format(a_path))
+        run("mv -f {}web_static/* {}".format(f_path, f_path))
+        run("rm -rf {}web_static".format(f_path))
+        run("rm -rf /data/web_static/current")
+        run("ln -s {} /data/web_static/current".format(f_path))
+
+        return True
+
+    return False

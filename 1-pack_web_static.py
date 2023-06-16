@@ -1,21 +1,15 @@
 #!/usr/bin/python3
-# Using fabric to automate the process
-from fabric.api import *
-import os
 from datetime import datetime
-
-env.hosts = ['localhost']
+from fabric.api import local
 
 
 def do_pack():
-    """this function does the packing of the script to a tar file """
-    try:
-        filepath = "versions/web_static_" + datetime.now().\
-                   strftime("%Y%m%d%H%M%S") + ".tgz"
-        local("mkdir -p versions")
-        local("tar -zcvf versions/web_static_$(date +%Y%m%d%H%M%S).tgz\
-        web_static")
-        print("web_static packed: {} -> {}".
-              format(filepath, os.path.getsize(filepath)))
-    except:
-            return None
+    """Generates a .tgz archive from the contents
+    of the web_static folder of this repository.
+    """
+
+    d = datetime.now()
+    now = d.strftime('%Y%m%d%H%M%S')
+
+    local("mkdir -p versions")
+    local("tar -czvf versions/web_static_{}.tgz web_static".format(now))
